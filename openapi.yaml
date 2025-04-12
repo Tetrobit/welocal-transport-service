@@ -1,0 +1,292 @@
+openapi: 3.0.0
+info:
+  title: WeLocal Transport Service API
+  description: API для управления транспортными услугами
+  version: 1.0.0
+
+servers:
+  - url: http://localhost:10412
+    description: Локальный сервер разработки
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    TransportRequest:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        userId:
+          type: string
+          format: uuid
+        type:
+          type: string
+          enum: [DELIVERY, PASSENGER]
+        status:
+          type: string
+          enum: [PENDING, ACCEPTED, IN_PROGRESS, COMPLETED, CANCELLED]
+        pickupLocation:
+          type: object
+          properties:
+            address:
+              type: string
+            latitude:
+              type: number
+              format: float
+            longitude:
+              type: number
+              format: float
+        dropoffLocation:
+          type: object
+          properties:
+            address:
+              type: string
+            latitude:
+              type: number
+              format: float
+            longitude:
+              type: number
+              format: float
+        scheduledTime:
+          type: string
+          format: date-time
+        description:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+paths:
+  /transport-requests:
+    get:
+      summary: Получение списка транспортных заявок
+      tags:
+        - Транспортные заявки
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: type
+          schema:
+            type: string
+            enum: [DELIVERY, PASSENGER]
+        - in: query
+          name: status
+          schema:
+            type: string
+            enum: [PENDING, ACCEPTED, IN_PROGRESS, COMPLETED, CANCELLED]
+        - in: query
+          name: page
+          schema:
+            type: integer
+            default: 1
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 10
+      responses:
+        '200':
+          description: Успешное получение списка заявок
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/TransportRequest'
+                  total:
+                    type: integer
+                  page:
+                    type: integer
+                  limit:
+                    type: integer
+        '401':
+          description: Не авторизован
+        '500':
+          description: Внутренняя ошибка сервера
+
+    post:
+      summary: Создание новой транспортной заявки
+      tags:
+        - Транспортные заявки
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - type
+                - pickupLocation
+                - dropoffLocation
+                - scheduledTime
+              properties:
+                type:
+                  type: string
+                  enum: [DELIVERY, PASSENGER]
+                pickupLocation:
+                  type: object
+                  required:
+                    - address
+                    - latitude
+                    - longitude
+                  properties:
+                    address:
+                      type: string
+                    latitude:
+                      type: number
+                      format: float
+                    longitude:
+                      type: number
+                      format: float
+                dropoffLocation:
+                  type: object
+                  required:
+                    - address
+                    - latitude
+                    - longitude
+                  properties:
+                    address:
+                      type: string
+                    latitude:
+                      type: number
+                      format: float
+                    longitude:
+                      type: number
+                      format: float
+                scheduledTime:
+                  type: string
+                  format: date-time
+                description:
+                  type: string
+      responses:
+        '201':
+          description: Заявка успешно создана
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransportRequest'
+        '400':
+          description: Неверные данные
+        '401':
+          description: Не авторизован
+        '500':
+          description: Внутренняя ошибка сервера
+
+  /transport-requests/{id}:
+    parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: string
+          format: uuid
+    get:
+      summary: Получение информации о транспортной заявке
+      tags:
+        - Транспортные заявки
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Успешное получение информации о заявке
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransportRequest'
+        '404':
+          description: Заявка не найдена
+        '500':
+          description: Внутренняя ошибка сервера
+
+    put:
+      summary: Обновление информации о транспортной заявке
+      tags:
+        - Транспортные заявки
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                type:
+                  type: string
+                  enum: [DELIVERY, PASSENGER]
+                pickupLocation:
+                  type: object
+                  properties:
+                    address:
+                      type: string
+                    latitude:
+                      type: number
+                      format: float
+                    longitude:
+                      type: number
+                      format: float
+                dropoffLocation:
+                  type: object
+                  properties:
+                    address:
+                      type: string
+                    latitude:
+                      type: number
+                      format: float
+                    longitude:
+                      type: number
+                      format: float
+                scheduledTime:
+                  type: string
+                  format: date-time
+                description:
+                  type: string
+                status:
+                  type: string
+                  enum: [PENDING, ACCEPTED, IN_PROGRESS, COMPLETED, CANCELLED]
+      responses:
+        '200':
+          description: Заявка успешно обновлена
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransportRequest'
+        '400':
+          description: Неверные данные
+        '401':
+          description: Не авторизован
+        '404':
+          description: Заявка не найдена
+        '500':
+          description: Внутренняя ошибка сервера
+
+    delete:
+      summary: Удаление транспортной заявки
+      tags:
+        - Транспортные заявки
+      security:
+        - bearerAuth: []
+      responses:
+        '204':
+          description: Заявка успешно удалена
+        '401':
+          description: Не авторизован
+        '404':
+          description: Заявка не найдена
+        '500':
+          description: Внутренняя ошибка сервера 
